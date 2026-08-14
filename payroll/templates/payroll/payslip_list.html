@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Tous les Bulletins de Paie</h2>
+        <div>
+            <a href="{% url 'payroll:payslip_bulk_create' %}" class="btn btn-primary">Génération Mensuelle</a>
+            <a href="{% url 'payroll:archived_payslips' %}" class="btn btn-outline-secondary">Archives</a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Salarié</th>
+                        <th>Période</th>
+                        <th>Brut</th>
+                        <th>Net à Payer</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payslip in payslips %}
+                    <tr>
+                        <td><strong>{{ payslip.employee.last_name }}</strong> {{ payslip.employee.first_name }}</td>
+                        <td>{{ payslip.month }} {{ payslip.year }}</td>
+                        <td>{{ payslip.gross_salary|floatformat:2 }} Ar</td>
+                        <td class="text-success"><strong>{{ payslip.net_payable|floatformat:2 }} Ar</strong></td>
+                        <td>
+                            <a href="{% url 'payroll:payslip_detail' payslip.id %}" class="btn btn-sm btn-info">Voir</a>
+                            <a href="{% url 'payroll:generate_payslip_pdf' payslip.id %}" class="btn btn-sm btn-secondary" target="_blank">PDF</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">Aucun bulletin trouvé.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

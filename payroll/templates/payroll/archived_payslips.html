@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiches de paie masquées</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body class="bg-light py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-eye-slash me-2"></i>Fiches de paie masquées / archivées</h2>
+            <a href="{% url 'payroll:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Retour au Tableau de bord
+            </a>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                {% if archived_payslips %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Employé</th>
+                                    <th>Période</th>
+                                    <th>Net à payer</th>
+                                    <th>Date de création</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payslip in archived_payslips %}
+                                    <tr>
+                                        <td class="fw-bold">{{ payslip.employee.first_name }} {{ payslip.employee.last_name }}</td>
+                                        <td>{{ payslip.month }} {{ payslip.year }}</td>
+                                        <td>{{ payslip.net_payable|floatformat:2 }} Ar</td>
+                                        <td>{{ payslip.created_at|date:"d/m/Y H:i" }}</td>
+                                        <td class="text-end">
+                                            <a href="{% url 'payroll:toggle_hide_payslip' payslip.id %}" class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-eye me-1"></i> Réafficher
+                                            </a>
+                                            <a href="{% url 'payroll:generate_payslip_pdf' payslip.id %}" class="btn btn-sm btn-outline-danger" target="_blank">
+                                                <i class="bi bi-file-earmark-pdf"></i> PDF
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="p-5 text-center text-muted">
+                        <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                        Aucune fiche de paie masquée pour le moment.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

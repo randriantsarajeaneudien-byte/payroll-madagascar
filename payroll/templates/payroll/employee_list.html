@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Liste des Salariés</h2>
+        <a href="{% url 'payroll:employee_add' %}" class="btn btn-primary">+ Ajouter un Salarié</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nom & Prénom</th>
+                        <th>Poste</th>
+                        <th>Salaire de base</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for employee in employees %}
+                    <tr>
+                        <td><strong>{{ employee.last_name }}</strong> {{ employee.first_name }}</td>
+                        <td>{{ employee.job_title|default:"-" }}</td>
+                        <td>{{ employee.base_salary|floatformat:2 }} Ar</td>
+                        <td>
+                            <a href="{% url 'payroll:employee_detail' employee.id %}" class="btn btn-sm btn-outline-info">Voir</a>
+                            <a href="{% url 'payroll:employee_edit' employee.id %}" class="btn btn-sm btn-outline-warning">Éditer</a>
+                            <a href="{% url 'payroll:payslip_create' employee.id %}" class="btn btn-sm btn-outline-success">+ Bulletin</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">Aucun salarié enregistré.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Récapitulatif Mensuel de Paie - PaieSaaS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{% url 'payroll:dashboard' %}">
+                <i class="bi bi-wallet2 me-2"></i>PaieSaaS Mada
+            </a>
+            <span class="navbar-text text-white me-auto ms-3">
+                Société: <strong>{{ company.name }}</strong>
+            </span>
+        </div>
+    </nav>
+
+    <div class="container my-4" style="font-family: sans-serif;">
+        <!-- EN-TÊTE PRINCIPAL -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+            <div>
+                <h2 class="mb-1">Récapitulatif Mensuel de Paie</h2>
+                <p class="text-muted mb-0">Journal de paie global des salariés de l'entreprise</p>
+            </div>
+            <a href="{% url 'payroll:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Retour au Tableau de bord
+            </a>
+        </div>
+
+        <!-- FILTRE DE PÉRIODE & EXPORTATIONS -->
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Mois</label>
+                        <select name="month" class="form-select">
+                            {% for m in months_list %}
+                                <option value="{{ m }}" {% if m == selected_month %}selected{% endif %}>{{ m }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Année</label>
+                        <input type="number" name="year" class="form-control" value="{{ selected_year }}">
+                    </div>
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-filter me-1"></i>Afficher
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- TABLEAU RÉCAPITULATIF -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                <div>
+                    <h5 class="card-title mb-0 fw-bold">
+                        Journal de Paie : <span class="text-primary">{{ selected_month }} {{ selected_year }}</span>
+                    </h5>
+                    <small class="text-muted">{{ summary_data|length }} salarié(s) dans le registre</small>
+                </div>
+                <!-- BOUTONS D'EXPORTATION -->
+                <div class="d-flex gap-2">
+                    <a href="{% url 'payroll:export_monthly_summary_excel' %}?month={{ selected_month }}&year={{ selected_year }}"
+                       class="btn btn-outline-success btn-sm fw-bold">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+                    </a>
+                    <a href="{% url 'payroll:export_monthly_summary_pdf' %}?month={{ selected_month }}&year={{ selected_year }}"
+                       target="_blank"
+                       class="btn btn-outline-danger btn-sm fw-bold">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Matricule</th>
+                                <th>Nom & Prénoms</th>
+                                <th class="text-end">Salaire Brut</th>
+                                <th class="text-end">Retenue CNaPS (1%)</th>
+                                <th class="text-end">Retenue IRSA</th>
+                                <th class="text-end">Net à Payer</th>
+                                <th class="text-center">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in summary_data %}
+                            <tr>
+                                <td class="fw-bold text-secondary">{{ item.employee.registration_number|default:item.employee.id }}</td>
+                                <td class="fw-bold">{{ item.employee.last_name }} {{ item.employee.first_name }}</td>
+                                <td class="text-end">{{ item.gross_salary|floatformat:2 }} Ar</td>
+                                <td class="text-end text-muted">{{ item.cnaps_employee|floatformat:2 }} Ar</td>
+                                <td class="text-end text-danger">{{ item.irsa|floatformat:2 }} Ar</td>
+                                <td class="text-end fw-bold text-success">{{ item.net_payable|floatformat:2 }} Ar</td>
+                                <td class="text-center">
+                                    {% if item.has_payslip %}
+                                        <span class="badge bg-success-subtle text-success border border-success px-2 py-1">
+                                            <i class="bi bi-check-circle me-1"></i>Généré
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-warning border border-warning px-2 py-1">
+                                            <i class="bi bi-exclamation-circle me-1"></i>Non généré
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    Aucun salarié enregistré pour le moment.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        {% if summary_data %}
+                        <tfoot class="table-dark fw-bold">
+                            <tr class="fs-6">
+                                <td colspan="2" class="text-uppercase">Total Général</td>
+                                <td class="text-end">{{ total_gross|floatformat:2 }} Ar</td>
+                                <td class="text-end">{{ total_cnaps|floatformat:2 }} Ar</td>
+                                <td class="text-end text-warning">{{ total_irsa|floatformat:2 }} Ar</td>
+                                <td class="text-end text-info">{{ total_net|floatformat:2 }} Ar</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

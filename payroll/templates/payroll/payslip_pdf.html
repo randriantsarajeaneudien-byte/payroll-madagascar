@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Bulletin de Paie</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 8mm 10mm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 8.5pt;
+            color: #000;
+        }
+        .title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 11pt;
+            background-color: #eee;
+            border: 1px solid #000;
+            padding: 4px;
+            margin-bottom: 8px;
+        }
+        table.full {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+        }
+        table.full td {
+            border: 1px solid #000;
+            padding: 3px 5px;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .bold { font-weight: bold; }
+        .bg-gray { background-color: #f0f0f0; }
+    </style>
+</head>
+<body>
+
+    <div class="title">BULLETIN DE PAIE</div>
+
+    <!-- EMPLOYEUR -->
+    <table class="full">
+        <tr>
+            <td width="50%">
+                <b>{{ payslip.employee.company.name }}</b><br>
+                {{ payslip.employee.company.address }}
+            </td>
+            <td width="50%">
+                <b>NIF :</b> {{ payslip.employee.company.nif }}<br>
+                <b>STAT :</b> {{ payslip.employee.company.stat|default:"-" }}<br>
+                <b>CNaPS :</b> {{ payslip.employee.company.cnaps_no }}
+            </td>
+        </tr>
+    </table>
+
+    <!-- EMPLOYE -->
+    <table class="full">
+        <tr>
+            <td width="20%"><b>PAYE MOIS</b></td>
+            <td width="30%">{{ payslip.month }} {{ payslip.year }}</td>
+            <td width="25%"><b>DATE D'EMBAUCHE</b></td>
+            <td width="25%">{{ payslip.employee.hire_date|date:"d/m/Y" }}</td>
+        </tr>
+        <tr>
+            <td><b>NOM & PRENOM</b></td>
+            <td>{{ payslip.employee.last_name }} {{ payslip.employee.first_name }}</td>
+            <td><b>DEPARTEMENT</b></td>
+            <td>{{ payslip.employee.department }}</td>
+        </tr>
+        <tr>
+            <td><b>CIN</b></td>
+            <td>{{ payslip.employee.cin }}</td>
+            <td><b>CATEGORIE</b></td>
+            <td>{{ payslip.employee.category }}</td>
+        </tr>
+        <tr>
+            <td><b>FONCTION</b></td>
+            <td>{{ payslip.employee.job_title }}</td>
+            <td><b>CNaPS SALARIÉ</b></td>
+            <td>{{ payslip.employee.cnaps_no }}</td>
+        </tr>
+        <tr>
+            <td><b>CONTRAT</b></td>
+            <td>{{ payslip.employee.contract_type }}</td>
+            <td><b>ENFANTS À CHARGE</b></td>
+            <td>{{ payslip.employee.children_count }}</td>
+        </tr>
+        <tr>
+            <td><b>SALAIRE DE BASE</b></td>
+            <td class="bold">{{ payslip.employee.base_salary }} Ar</td>
+            <td><b>TEMPS DE TRAVAIL</b></td>
+            <td>{{ payslip.working_days }} Jours ({{ payslip.overtime_hours }}h HS)</td>
+        </tr>
+    </table>
+
+    <!-- TABLEAU CALCULS PAIE (Largeurs strictement fixées) -->
+    <table class="full">
+        <tr class="bg-gray bold text-center">
+            <td width="38%">DÉSIGNATION</td>
+            <td width="16%">GAINS</td>
+            <td width="16%">RETENUES</td>
+            <td width="12%">TAUX PAT.</td>
+            <td width="18%">MONTANT PAT.</td>
+        </tr>
+        <tr>
+            <td width="38%"><b>Salaire de Base</b></td>
+            <td width="16%" class="text-right">{{ payslip.employee.base_salary }}</td>
+            <td width="16%"></td>
+            <td width="12%"></td>
+            <td width="18%"></td>
+        </tr>
+        <tr>
+            <td>Heures Supplémentaires</td>
+            <td class="text-right">{{ payslip.overtime_amount }}</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Primes et Indemnités</td>
+            <td class="text-right">{{ payslip.bonuses }}</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr class="bg-gray bold">
+            <td class="text-center">TOTAL BRUT</td>
+            <td class="text-right">{{ payslip.gross_salary }}</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>CNaPS (1%)</td>
+            <td></td>
+            <td class="text-right">{{ payslip.cnaps_employee }}</td>
+            <td class="text-center">13%</td>
+            <td class="text-right">{{ payslip.cnaps_employer }}</td>
+        </tr>
+        <tr>
+            <td>SMIDS / OSTIE</td>
+            <td></td>
+            <td class="text-right">{{ payslip.smids_employee }}</td>
+            <td class="text-center">5%</td>
+            <td class="text-right">{{ payslip.smids_employer }}</td>
+        </tr>
+        <tr>
+            <td>FMFP</td>
+            <td></td>
+            <td></td>
+            <td class="text-center">1%</td>
+            <td class="text-right">{{ payslip.fmfp_employer }}</td>
+        </tr>
+        <tr class="bg-gray bold">
+            <td class="text-center">BASE IMPOSABLE</td>
+            <td class="text-right">{{ payslip.taxable_base }}</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td><b>IRSA</b></td>
+            <td></td>
+            <td class="text-right bold">{{ payslip.irsa }}</td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Avance sur salaire</td>
+            <td></td>
+            <td class="text-right">{{ payslip.advances }}</td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr class="bg-gray bold" style="font-size: 9.5pt;">
+            <td class="text-center">NET À PAYER</td>
+            <td class="text-right" style="border: 1.5pt solid #000;">{{ payslip.net_payable }} Ar</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </table>
+
+    <!-- SIGNATURES -->
+    <table class="full" style="margin-top: 15px;">
+        <tr>
+            <td width="50%" class="text-center" style="height: 40px; vertical-align: top;"><b><u>L'EMPLOYEUR</u></b></td>
+            <td width="50%" class="text-center" style="height: 40px; vertical-align: top;"><b><u>LE SALARIÉ</u></b></td>
+        </tr>
+    </table>
+
+</body>
+</html>

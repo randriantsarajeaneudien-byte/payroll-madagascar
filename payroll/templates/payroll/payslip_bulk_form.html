@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Génération mensuelle des bulletins</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+</head>
+<body class="bg-light py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-7 col-lg-6">
+
+                <div class="card shadow border-0 rounded-3">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h5 class="card-title mb-0 fw-bold">
+                            <i class="bi bi-layers me-2"></i>Génération groupée des bulletins
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <p class="text-muted mb-4">
+                            Cette action générera automatiquement un bulletin de paie standard (base 30 jours) pour les <strong>{{ employees.count }} salarié(s)</strong> actifs de votre entreprise.
+                        </p>
+
+                        <form method="post" id="bulkForm">
+                            {% csrf_token %}
+
+                            <div class="mb-3">
+                                <label for="month" class="form-label fw-medium">Sélectionner le Mois</label>
+                                <select name="month" id="month" class="form-select" required>
+                                    <option value="" selected disabled>-- Choisir le mois --</option>
+                                    {% for m in months_list %}
+                                        <option value="{{ m }}">{{ m }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="year" class="form-label fw-medium">Année</label>
+                                <input type="number" name="year" id="year" class="form-control" value="{{ current_year }}" required>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                                <a href="{% url 'payroll:dashboard' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i> Annuler
+                                </a>
+                                <button type="submit" class="btn btn-primary fw-bold" id="btnSubmit">
+                                    <i class="bi bi-gear-wide-connected me-1"></i> Lancer la génération
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.getElementById('bulkForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const month = document.getElementById('month').value;
+
+            if(!month) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Attention',
+                    text: 'Veuillez sélectionner un mois avant de continuer.',
+                    confirmButtonColor: '#0d6efd'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Confirmer la génération ?',
+                text: `Générer les bulletins de paie pour tous les salariés pour le mois de ${month} ?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0d6efd',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Oui, générer',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.submit();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

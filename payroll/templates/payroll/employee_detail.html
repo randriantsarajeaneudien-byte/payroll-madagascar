@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ employee.first_name }} {{ employee.last_name }}</h2>
+        <div>
+            <a href="{% url 'payroll:employee_edit' employee.id %}" class="btn btn-warning">Modifier</a>
+            <a href="{% url 'payroll:payslip_create' employee.id %}" class="btn btn-success">+ Générer un bulletin</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light"><strong>Informations personnelles</strong></div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Fonction :</strong> {{ employee.job_title|default:"-" }}</li>
+                    <li class="list-group-item"><strong>Salaire de base :</strong> {{ employee.base_salary|floatformat:2 }} Ar</li>
+                    <li class="list-group-item"><strong>CNaPS N° :</strong> {{ employee.cnaps_no|default:"-" }}</li>
+                    <li class="list-group-item"><strong>Enfants à charge :</strong> {{ employee.children_count }}</li>
+                    <li class="list-group-item"><strong>Solde Avances :</strong> {{ employee.total_advance_balance|floatformat:2 }} Ar</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light"><strong>Historique des bulletins</strong></div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Période</th>
+                                <th>Net à payer</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payslip in payslips %}
+                            <tr>
+                                <td>{{ payslip.month }} {{ payslip.year }}</td>
+                                <td><strong>{{ payslip.net_payable|floatformat:2 }} Ar</strong></td>
+                                <td>
+                                    <a href="{% url 'payroll:payslip_detail' payslip.id %}" class="btn btn-sm btn-info">Détails</a>
+                                    <a href="{% url 'payroll:generate_payslip_pdf' payslip.id %}" class="btn btn-sm btn-secondary" target="_blank">PDF</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">Aucun bulletin généré.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

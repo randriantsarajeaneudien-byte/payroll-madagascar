@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 50px auto; padding: 30px; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: sans-serif; text-align: center;">
+    <div style="color: #e53e3e; font-size: 48px; margin-bottom: 10px;">⚠️</div>
+    <h2 style="color: #c53030; margin-bottom: 10px;">Compte Suspendu</h2>
+    
+    <p style="color: #4a5568; font-size: 15px; margin-bottom: 20px;">
+        L'accès pour l'entreprise <strong>{{ company.name }}</strong> a été temporairement suspendu.
+    </p>
+
+    <div style="background-color: #fff5f5; border: 1px solid #feb2b2; padding: 15px; border-radius: 6px; margin-bottom: 25px; text-align: left;">
+        <strong style="color: #9b2c2c; display: block; margin-bottom: 5px;">Motif de la suspension :</strong>
+        <p style="color: #742a2a; margin: 0; font-size: 14px;">{{ reason }}</p>
+    </div>
+
+    <p style="color: #718096; font-size: 13px; margin-bottom: 20px;">
+        Si vous pensez qu'il s'agit d'une erreur, veuillez contacter l'administrateur.
+    </p>
+
+    <div>
+        <a href="{% url 'accounts:logout' %}" style="display: inline-block; padding: 8px 16px; background: #718096; color: white; border-radius: 4px; text-decoration: none; font-size: 14px;">Se déconnecter</a>
+    </div>
+</div>
+{% endblock %}
