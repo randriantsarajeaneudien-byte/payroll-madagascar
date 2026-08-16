@@ -9,8 +9,9 @@ urlpatterns = [
     # Redirection de /accounts/ vers la page d'inscription
     path('', lambda request: redirect('accounts:register'), name='index'),
 
-    # Inscription, Connexion et Déconnexion
+    # Inscription, Activation, Connexion et Déconnexion
     path('register/', views.register_view, name='register'),
+    path('activate/<str:uidb64>/<str:token>/', views.activate, name='activate'),
     path('login/', LoginView.as_view(template_name='accounts/login.html'), name='login'),
     path('logout/', views.custom_logout, name='logout'),
 

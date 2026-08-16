@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from disposable_email_domains import blocklist
 from .models import Company
 
 
@@ -22,6 +24,26 @@ class RegisterForm(forms.ModelForm):
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Prénom'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom'}),
         }
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').lower().strip()
+
+        if not email:
+            raise ValidationError("L'adresse e-mail est obligatoire.")
+
+        # 1. Empêcher la réutilisation d'un même e-mail
+        if User.objects.filter(email__iexact=email).exists():
+            raise ValidationError("Un compte existe déjà avec cette adresse e-mail.")
+
+        # 2. Bloquer les e-mails temporaires via le package disposable-email-domains
+        domain = email.split('@')[-1]
+        if domain in blocklist:
+            raise ValidationError(
+                "Les adresses e-mail temporaires ou jetables ne sont pas autorisées. "
+                "Veuillez utiliser une adresse e-mail valide."
+            )
+
+        return email
 
     def clean(self):
         cleaned_data = super().clean()

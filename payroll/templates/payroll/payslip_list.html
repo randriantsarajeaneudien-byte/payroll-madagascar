@@ -30,8 +30,12 @@
                         <td>{{ payslip.gross_salary|floatformat:2 }} Ar</td>
                         <td class="text-success"><strong>{{ payslip.net_payable|floatformat:2 }} Ar</strong></td>
                         <td>
-                            <a href="{% url 'payroll:payslip_detail' payslip.id %}" class="btn btn-sm btn-info">Voir</a>
-                            <a href="{% url 'payroll:generate_payslip_pdf' payslip.id %}" class="btn btn-sm btn-secondary" target="_blank">PDF</a>
+                            <a href="{% url 'payroll:payslip_detail' payslip.id %}" class="btn btn-sm btn-info text-white me-1">
+                                <i class="fas fa-eye"></i> Voir
+                            </a>
+                            <a href="{% url 'payroll:generate_payslip_pdf' payslip.id %}" class="btn btn-sm btn-danger" target="_blank">
+                                <i class="fas fa-file-pdf"></i> Télécharger PDF
+                            </a>
                         </td>
                     </tr>
                     {% empty %}

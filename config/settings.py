@@ -126,3 +126,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = 'payroll:dashboard'
 LOGOUT_REDIRECT_URL = 'accounts:login'
 LOGIN_URL = 'accounts:login'
+
+
+# ==============================================================================
+# CONFIGURATION DES E-MAILS (Double Opt-In)
+# ==============================================================================
+
+if DEBUG:
+    # Mode Développement : affiche le contenu complet de l'e-mail dans le terminal PyCharm
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    # Mode Production (Exemple avec SMTP)
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = 'votre_email@gmail.com'
+    EMAIL_HOST_PASSWORD = 'votre_mot_de_passe_application'
+
+DEFAULT_FROM_EMAIL = 'Payroll Madagascar <noreply@payroll.mg>'

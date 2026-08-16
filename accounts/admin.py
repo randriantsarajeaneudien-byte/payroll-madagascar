@@ -18,7 +18,6 @@ class CompanyAdmin(admin.ModelAdmin):
     list_filter = ('subscription_active', 'is_banned')
     search_fields = ('name', 'owner__username', 'owner__email', 'nif')
 
-    # Organisation propre dans la fiche d'administration
     fieldsets = (
         ("Informations Générales", {
             'fields': ('owner', 'name', 'nif', 'stat', 'cnaps_no', 'address', 'activity')
@@ -34,19 +33,29 @@ class CompanyAdmin(admin.ModelAdmin):
         }),
     )
 
-    actions = ['activate_subscription_1_year', 'ban_company', 'unban_company']
+    actions = [
+        'activate_subscription_2_months',
+        'reset_free_trials',
+        'ban_company',
+        'unban_company'
+    ]
 
-    @admin.action(description="Activer l'abonnement (1 An / 60 000 Ar)")
-    def activate_subscription_1_year(self, request, queryset):
+    @admin.action(description="Activer l'abonnement (2 mois / 60 000 Ar)")
+    def activate_subscription_2_months(self, request, queryset):
         for company in queryset:
             company.subscription_active = True
-            company.subscription_expires_at = timezone.now() + timedelta(days=365)
+            company.subscription_expires_at = timezone.now() + timedelta(days=60)
             company.is_banned = False
             company.ban_reason = ""
             company.save()
-        self.message_user(request, f"{queryset.count()} entreprise(s) activée(s) pour 1 an avec succès.")
+        self.message_user(request, f"{queryset.count()} entreprise(s) activée(s) pour 2 mois.")
 
-    @admin.action(description="Bannir l'entreprise (Violation des conditions)")
+    @admin.action(description="Réinitialiser les essais gratuits (Remettre à 0)")
+    def reset_free_trials(self, request, queryset):
+        queryset.update(generation_count=0)
+        self.message_user(request, f"Essais gratuits réinitialisés pour {queryset.count()} entreprise(s).")
+
+    @admin.action(description="Bannir l'entreprise")
     def ban_company(self, request, queryset):
         queryset.update(
             is_banned=True,
@@ -65,7 +74,6 @@ class PaymentSettingsAdmin(admin.ModelAdmin):
     list_display = ('mobile_money_number', 'price')
 
     def has_add_permission(self, request):
-        # Empêche de créer plusieurs configurations de paiement
         if PaymentSettings.objects.exists():
             return False
         return super().has_add_permission(request)

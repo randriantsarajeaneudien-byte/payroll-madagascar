@@ -4,7 +4,6 @@ from django.utils import timezone
 
 
 class SubscriptionPlan(models.TextChoices):
-    # Changement du libellé pour refléter les 2 mois
     STANDARD = 'STANDARD', '60 000 Ar / 2 mois'
 
 
@@ -35,22 +34,26 @@ class Company(models.Model):
     is_banned = models.BooleanField(default=False, verbose_name="Banni / Suspendu")
     ban_reason = models.TextField(blank=True, null=True, verbose_name="Motif du bannissement")
 
-    def can_generate_payslip(self):
-        """Vérifie si l'entreprise a le droit de générer un bulletin"""
-        if self.is_banned:
-            return False
-        if self.subscription_active and (self.subscription_expires_at is None or self.subscription_expires_at > timezone.now()):
-            return True
-        return self.generation_count < self.max_free_generations
+    def remaining_free_trials(self):
+        """Retourne le nombre d'essais gratuits restants"""
+        remaining = self.max_free_generations - self.generation_count
+        return max(0, remaining)
 
     def is_subscription_valid(self):
-        if self.is_banned:
-            return False
-        if not self.subscription_active:
+        """Vérifie si l'abonnement est actif et valide dans le temps"""
+        if self.is_banned or not self.subscription_active:
             return False
         if self.subscription_expires_at and self.subscription_expires_at < timezone.now():
             return False
         return True
+
+    def can_generate_payslip(self):
+        """Vérifie si l'entreprise a le droit de générer un bulletin"""
+        if self.is_banned:
+            return False
+        if self.is_subscription_valid():
+            return True
+        return self.generation_count < self.max_free_generations
 
     def __str__(self):
         return self.name
@@ -70,7 +73,7 @@ class PaymentSettings(models.Model):
         verbose_name="Prix de l'abonnement (Ar)"
     )
     instructions = models.TextField(
-        default="Veuillez envoyer 60 000 Ar par Mobile Money (pour 2 mois d'accès) avec la référence ou le nom de votre entreprise.",
+        default="Veuillez envoyer 60 000 Ar par Mobile Money (pour 2 mois d'accès) avec le nom de votre entreprise en référence.",
         verbose_name="Consignes de paiement"
     )
 
@@ -79,5 +82,5 @@ class PaymentSettings(models.Model):
         verbose_name_plural = "Configuration Paiement"
 
     def save(self, *args, **kwargs):
-        self.pk = 1  # Garde toujours la même ligne dans la base
+        self.pk = 1  # Singleton : conserve toujours la même ligne unique en BDD
         super().save(*args, **kwargs)
