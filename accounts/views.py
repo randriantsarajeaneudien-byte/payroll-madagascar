@@ -49,8 +49,7 @@ def register_view(request):
 
             messages.success(
                 request,
-                "Un e-mail de confirmation a été envoyé à votre adresse. "
-                "Veuillez cliquer sur le lien qu'il contient pour activer votre compte."
+                "Votre compte a été créé avec succès ! Veuillez voir votre e-mail pour l'activer."
             )
             return redirect('accounts:login')
     else:
