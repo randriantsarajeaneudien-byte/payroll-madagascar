@@ -19,7 +19,7 @@ SECRET_KEY = 'django-insecure-o&1o6up%s0u8h7ed3-*1##@6f)9pv4-@q7bktajhpy506lxfp1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -132,16 +132,11 @@ LOGIN_URL = 'accounts:login'
 # CONFIGURATION DES E-MAILS (Double Opt-In)
 # ==============================================================================
 
-if DEBUG:
-    # Mode Développement : affiche le contenu complet de l'e-mail dans le terminal PyCharm
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-else:
-    # Mode Production (Exemple avec SMTP)
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = 'votre_email@gmail.com'
-    EMAIL_HOST_PASSWORD = 'votre_mot_de_passe_application'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'randriantsarajeaneudien@gmail.com'
+EMAIL_HOST_PASSWORD = 'iwgfwdjggxzqqrdv'
 
 DEFAULT_FROM_EMAIL = 'Payroll Madagascar <noreply@payroll.mg>'

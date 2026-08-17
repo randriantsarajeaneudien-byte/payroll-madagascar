@@ -43,6 +43,23 @@
                 </div>
                 {% endif %}
 
+                <!-- Badge dynamique : Abonnement Actif / Essais Gratuits / Expiré -->
+                {% if user.is_authenticated %}
+                    {% if user.profile.has_active_subscription %}
+                        <span class="badge bg-success px-3 py-2 fw-semibold">
+                            <i class="bi bi-check-circle-fill me-1"></i> Abonnement Actif
+                        </span>
+                    {% elif user.profile.trial_count > 0 %}
+                        <span class="badge bg-info text-dark px-3 py-2 fw-semibold">
+                            <i class="bi bi-gift-fill me-1"></i> {{ user.profile.trial_count }} essai{{ user.profile.trial_count|pluralize }} gratuit{{ user.profile.trial_count|pluralize }}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-danger px-3 py-2 fw-semibold">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> Essais épuisés
+                        </span>
+                    {% endif %}
+                {% endif %}
+
                 {% if user.is_authenticated %}
                 <div class="dropdown">
                     <button class="btn btn-outline-light btn-sm rounded-pill dropdown-toggle d-flex align-items-center px-3" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
