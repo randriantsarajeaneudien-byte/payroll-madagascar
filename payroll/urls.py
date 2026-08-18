@@ -5,7 +5,8 @@ from .views import (
     payslip_views,
     declaration_views,
     summary_views,
-    pdf_views,  # <-- 1. Import ajouté ici
+    pdf_views,
+    settings_views,  # <-- 1. Importez le module de vue des paramètres
 )
 
 app_name = 'payroll'
@@ -29,7 +30,6 @@ urlpatterns = [
     path('employee/<int:employee_id>/payslip/new/', payslip_views.payslip_create, name='payslip_create'),
     path('payslip/<int:payslip_id>/', payslip_views.payslip_detail, name='payslip_detail'),
 
-    # 2. Modification de payslip_views vers pdf_views ci-dessous :
     path('payslip/<int:payslip_id>/pdf/', pdf_views.generate_payslip_pdf, name='generate_payslip_pdf'),
     path('payslip/<int:payslip_id>/toggle-hide/', payslip_views.toggle_hide_payslip, name='toggle_hide_payslip'),
 
@@ -42,4 +42,7 @@ urlpatterns = [
     path('summary/monthly/', summary_views.monthly_summary_view, name='monthly_summary'),
     path('summary/monthly/excel/', summary_views.export_monthly_summary_excel, name='export_monthly_summary_excel'),
     path('summary/monthly/pdf/', summary_views.export_monthly_summary_pdf, name='export_monthly_summary_pdf'),
+
+    # Paramètres de Paie de l'entreprise (NOUVEAU)
+    path('settings/', settings_views.payroll_settings_view, name='payroll_settings'),
 ]

@@ -25,7 +25,7 @@ class Employee(models.Model):
     total_advance_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0,
                                                 verbose_name="Solde Avance globale en cours (Ar)")
 
-    # NOUVEAU : Solde de congés payés restants (en jours)
+    # Solde de congés payés restants (en jours)
     leave_balance = models.DecimalField(max_digits=5, decimal_places=2, default=0,
                                         verbose_name="Solde de congés restants (Jours)")
 
@@ -43,7 +43,7 @@ class Payslip(models.Model):
     absence_days = models.DecimalField(max_digits=5, decimal_places=2, default=0,
                                        verbose_name="Nombre de jours d'absence non payés")
 
-    # NOUVEAU : Jours de congé payé pris pendant le mois
+    # Jours de congé payé pris pendant le mois
     paid_leave_days = models.DecimalField(max_digits=5, decimal_places=2, default=0,
                                           verbose_name="Nombre de jours de congé payé pris")
 
@@ -73,8 +73,10 @@ class Payslip(models.Model):
     # Cotisations Patronales
     cnaps_employer = models.DecimalField(max_digits=12, decimal_places=2, default=0,
                                          verbose_name="CNaPS Patronal (13%)")
-    smids_employer = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="SMIDS Patronal (5%)")
-    fmfp_employer = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="FMFP Patronal (1%)")
+    smids_employer = models.DecimalField(max_digits=12, decimal_places=2, default=0,
+                                         verbose_name="SMIDS Patronal (5%)")
+    fmfp_employer = models.DecimalField(max_digits=12, decimal_places=2, default=0,
+                                        verbose_name="FMFP Patronal (1%)")
 
     # Statut masqué/archivé du bulletin
     is_archived = models.BooleanField(default=False, verbose_name="Masqué/Archivé")
@@ -83,3 +85,28 @@ class Payslip(models.Model):
 
     def __str__(self):
         return f"Bulletin {self.month} {self.year} - {self.employee}"
+
+
+# ==============================================================================
+# Paramètres de paie configurables par chaque entreprise cliente (Uniquement en Taux)
+# ==============================================================================
+class PayrollSettings(models.Model):
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name='payroll_settings')
+
+    # Pourcentages modifiables par le client
+    cnaps_employee_rate = models.DecimalField(max_digits=5, decimal_places=4, default=0.0100,
+                                              verbose_name="Taux CNaPS Salarié")
+    cnaps_employer_rate = models.DecimalField(max_digits=5, decimal_places=4, default=0.1300,
+                                              verbose_name="Taux CNaPS Patronal")
+
+    # AJOUT DU TAUX SMIDS SALARIÉ ICI
+    smids_employee_rate = models.DecimalField(max_digits=5, decimal_places=4, default=0.0100,
+                                              verbose_name="Taux SMIDS Salarié")
+
+    smids_employer_rate = models.DecimalField(max_digits=5, decimal_places=4, default=0.0500,
+                                              verbose_name="Taux SMIDS / OSTIE Patronal")
+    fmfp_employer_rate = models.DecimalField(max_digits=5, decimal_places=4, default=0.0100,
+                                             verbose_name="Taux FMFP Patronal")
+
+    def __str__(self):
+        return f"Paramètres de paie - {self.company.name}"

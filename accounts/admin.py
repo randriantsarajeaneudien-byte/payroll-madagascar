@@ -4,6 +4,38 @@ from datetime import timedelta
 from .models import Company, PaymentSettings
 
 
+@admin.action(description="Activer l'abonnement (2 mois / 60 000 Ar)")
+def activate_subscription_2_months(modeladmin, request, queryset):
+    for company in queryset:
+        company.subscription_active = True
+        company.subscription_expires_at = timezone.now() + timedelta(days=60)
+        company.is_banned = False
+        company.ban_reason = ""
+        company.save()
+    modeladmin.message_user(request, f"{queryset.count()} entreprise(s) activée(s) pour 2 mois.")
+
+
+@admin.action(description="Réinitialiser les essais gratuits (Remettre à 0)")
+def reset_free_trials(modeladmin, request, queryset):
+    queryset.update(generation_count=0)
+    modeladmin.message_user(request, f"Essais gratuits réinitialisés pour {queryset.count()} entreprise(s).")
+
+
+@admin.action(description="Bannir l'entreprise")
+def ban_company(modeladmin, request, queryset):
+    queryset.update(
+        is_banned=True,
+        ban_reason="Votre accès a été suspendu pour non-respect des conditions d'utilisation."
+    )
+    modeladmin.message_user(request, f"{queryset.count()} entreprise(s) bannie(s).")
+
+
+@admin.action(description="Débannir l'entreprise")
+def unban_company(modeladmin, request, queryset):
+    queryset.update(is_banned=False, ban_reason="")
+    modeladmin.message_user(request, f"{queryset.count()} entreprise(s) débannie(s).")
+
+
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
     list_display = (
@@ -33,40 +65,13 @@ class CompanyAdmin(admin.ModelAdmin):
         }),
     )
 
+    # Référence directe aux fonctions d'action (sans guillemets)
     actions = [
-        'activate_subscription_2_months',
-        'reset_free_trials',
-        'ban_company',
-        'unban_company'
+        activate_subscription_2_months,
+        reset_free_trials,
+        ban_company,
+        unban_company,
     ]
-
-    @admin.action(description="Activer l'abonnement (2 mois / 60 000 Ar)")
-    def activate_subscription_2_months(self, request, queryset):
-        for company in queryset:
-            company.subscription_active = True
-            company.subscription_expires_at = timezone.now() + timedelta(days=60)
-            company.is_banned = False
-            company.ban_reason = ""
-            company.save()
-        self.message_user(request, f"{queryset.count()} entreprise(s) activée(s) pour 2 mois.")
-
-    @admin.action(description="Réinitialiser les essais gratuits (Remettre à 0)")
-    def reset_free_trials(self, request, queryset):
-        queryset.update(generation_count=0)
-        self.message_user(request, f"Essais gratuits réinitialisés pour {queryset.count()} entreprise(s).")
-
-    @admin.action(description="Bannir l'entreprise")
-    def ban_company(self, request, queryset):
-        queryset.update(
-            is_banned=True,
-            ban_reason="Votre accès a été suspendu pour non-respect des conditions d'utilisation."
-        )
-        self.message_user(request, f"{queryset.count()} entreprise(s) bannie(s).")
-
-    @admin.action(description="Débannir l'entreprise")
-    def unban_company(self, request, queryset):
-        queryset.update(is_banned=False, ban_reason="")
-        self.message_user(request, f"{queryset.count()} entreprise(s) débannie(s).")
 
 
 @admin.register(PaymentSettings)

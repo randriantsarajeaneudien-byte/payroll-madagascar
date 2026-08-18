@@ -7,6 +7,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from ..models import PayrollSettings  # <-- Import des paramètres de paie
 
 
 def generate_payslip_pdf_response(payslip, request_user):
@@ -15,6 +16,17 @@ def generate_payslip_pdf_response(payslip, request_user):
     """
     if payslip.employee.company.owner != request_user:
         return HttpResponseForbidden("Vous n'avez pas l'autorisation d'accéder à ce document.")
+
+    # Récupération des taux personnalisés de l'entreprise (ou valeurs par défaut)
+    company = payslip.employee.company
+    settings, created = PayrollSettings.objects.get_or_create(company=company)
+
+    # Conversion des taux décimaux (ex: 0.01 -> "1%", 0.13 -> "13%")
+    cnaps_emp_rate_str = f"{int(settings.cnaps_employee_rate * 100)}%"
+    cnaps_pat_rate_str = f"{int(settings.cnaps_employer_rate * 100)}%"
+    smids_emp_rate_str = f"{int(settings.smids_employee_rate * 100)}%"
+    smids_pat_rate_str = f"{int(settings.smids_employer_rate * 100)}%"
+    fmfp_pat_rate_str = f"{int(settings.fmfp_employer_rate * 100)}%"
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -51,12 +63,11 @@ def generate_payslip_pdf_response(payslip, request_user):
     story.append(Spacer(1, 8))
 
     # 2. Section Employeur
-    emp = payslip.employee.company
     emp_data = [
         [
-            Paragraph(f"<b>{emp.name}</b><br/>{emp.address}", cell_style),
+            Paragraph(f"<b>{company.name}</b><br/>{company.address}", cell_style),
             Paragraph(
-                f"<b>NIF :</b> {emp.nif}<br/><b>STAT :</b> {getattr(emp, 'stat', None) or '-'}<br/><b>CNaPS :</b> {emp.cnaps_no}",
+                f"<b>NIF :</b> {company.nif}<br/><b>STAT :</b> {getattr(company, 'stat', None) or '-'}<br/><b>CNaPS :</b> {company.cnaps_no}",
                 cell_style)
         ]
     ]
@@ -100,7 +111,7 @@ def generate_payslip_pdf_response(payslip, request_user):
     story.append(emp_info_table)
     story.append(Spacer(1, 8))
 
-    # 4. Tableau Calculs de Paie
+    # 4. Tableau Calculs de Paie (avec taux dynamiques injectés)
     absence_label = f"Absences ({payslip.absence_days} j × {payslip.daily_absence_rate:,.2f} Ar)" if payslip.absence_days > 0 else "Absences / Retenues"
     advance_label = f"Retenue Avance (Reste dû: {e.total_advance_balance:,.2f} Ar)" if e.total_advance_balance > 0 else "Avance sur salaire"
 
@@ -123,14 +134,14 @@ def generate_payslip_pdf_response(payslip, request_user):
          Paragraph("", cell_style), Paragraph("", cell_style), Paragraph("", cell_style)],
         [Paragraph("<b>TOTAL BRUT</b>", bold_style), Paragraph(f"<b>{payslip.gross_salary:,.2f}</b>", bold_right),
          Paragraph("", cell_style), Paragraph("", cell_style), Paragraph("", cell_style)],
-        [Paragraph("CNaPS (1%)", cell_style), Paragraph("", cell_style),
-         Paragraph(f"{payslip.cnaps_employee:,.2f}", right_style), Paragraph("13%", cell_style),
+        [Paragraph(f"CNaPS ({cnaps_emp_rate_str})", cell_style), Paragraph("", cell_style),
+         Paragraph(f"{payslip.cnaps_employee:,.2f}", right_style), Paragraph(cnaps_pat_rate_str, cell_style),
          Paragraph(f"{payslip.cnaps_employer:,.2f}", right_style)],
-        [Paragraph("SMIDS / OSTIE", cell_style), Paragraph("", cell_style),
-         Paragraph(f"{payslip.smids_employee:,.2f}", right_style), Paragraph("5%", cell_style),
+        [Paragraph(f"SMIDS / OSTIE ({smids_emp_rate_str})", cell_style), Paragraph("", cell_style),
+         Paragraph(f"{payslip.smids_employee:,.2f}", right_style), Paragraph(smids_pat_rate_str, cell_style),
          Paragraph(f"{payslip.smids_employer:,.2f}", right_style)],
         [Paragraph("FMFP", cell_style), Paragraph("", cell_style), Paragraph("", cell_style),
-         Paragraph("1%", cell_style), Paragraph(f"{payslip.fmfp_employer:,.2f}", right_style)],
+         Paragraph(fmfp_pat_rate_str, cell_style), Paragraph(f"{payslip.fmfp_employer:,.2f}", right_style)],
         [Paragraph("<b>BASE IMPOSABLE</b>", bold_style), Paragraph(f"<b>{payslip.taxable_base:,.2f}</b>", bold_right),
          Paragraph("", cell_style), Paragraph("", cell_style), Paragraph("", cell_style)],
         [Paragraph("<b>IRSA</b>", bold_style), Paragraph("", cell_style),

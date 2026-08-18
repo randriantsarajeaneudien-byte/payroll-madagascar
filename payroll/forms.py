@@ -1,5 +1,5 @@
 from django import forms
-from .models import Employee, Payslip
+from .models import Employee, Payslip, PayrollSettings
 
 
 class EmployeeForm(forms.ModelForm):
@@ -89,3 +89,25 @@ class PayslipCreateForm(forms.ModelForm):
             if field in self.fields:
                 self.fields[field].required = False
                 self.fields[field].initial = 0
+
+
+# ==============================================================================
+# Formulaire pour les paramètres de paie de l'entreprise
+# ==============================================================================
+class PayrollSettingsForm(forms.ModelForm):
+    class Meta:
+        model = PayrollSettings
+        fields = [
+            'cnaps_employee_rate',
+            'cnaps_employer_rate',
+            'smids_employee_rate',  # AJOUTÉ
+            'smids_employer_rate',
+            'fmfp_employer_rate',
+        ]
+        widgets = {
+            'cnaps_employee_rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'cnaps_employer_rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'smids_employee_rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}), # AJOUTÉ
+            'smids_employer_rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'fmfp_employer_rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+        }

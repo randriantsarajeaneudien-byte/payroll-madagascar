@@ -18,9 +18,17 @@
             <a class="navbar-brand fw-bold" href="{% url 'payroll:dashboard' %}">
                 <i class="bi bi-wallet2 me-2"></i>PaieSaaS Mada
             </a>
-            <span class="navbar-text text-white me-auto ms-3">
-                Société: <strong>{{ company.name }}</strong>
-            </span>
+
+            <div class="d-flex align-items-center ms-3 me-auto gap-3">
+                <span class="navbar-text text-white">
+                    Société: <strong>{{ company.name }}</strong>
+                </span>
+                <!-- LIEN PARAMÈTRES AJOUTÉ ICI -->
+                <a href="{% url 'payroll:payroll_settings' %}" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-gear-fill me-1"></i>Paramètres
+                </a>
+            </div>
+
             <div class="d-flex align-items-center gap-3">
                 <span class="badge {% if company.is_subscription_valid %}bg-success{% else %}bg-danger{% endif %} fs-6">
                     {% if company.is_subscription_valid %}Abonnement Actif{% else %}Abonnement Expiré{% endif %}
@@ -220,12 +228,39 @@
 
     </div>
 
+    <!-- FENÊTRE MODALE DE RAPPEL -->
+    <div class="modal fade" id="paieWarningModal" tabindex="-1" aria-labelledby="paieWarningLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-warning fw-bold" id="paieWarningLabel">
+                <i class="bi bi-exclamation-triangle-fill"></i> Rappel important
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          </div>
+          <div class="modal-body py-3">
+            Veuillez bien vérifier votre paramètre de paie avant de passer à la génération de fiche de paie.
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-primary px-4 rounded-pill" data-bs-dismiss="modal">OK, j'ai vérifié</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- SCRIPTS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // Affichage automatique de la modale une seule fois (via localStorage)
+            if (!localStorage.getItem('modalRappelDejaAffiche')) {
+                var myModal = new bootstrap.Modal(document.getElementById('paieWarningModal'));
+                myModal.show();
+                localStorage.setItem('modalRappelDejaAffiche', 'true');
+            }
+
             // Gestion du toggle de rétractation de la liste
             const employeesCollapse = document.getElementById('employeesCollapse');
             const btnToggle = document.getElementById('btnToggleEmployees');
