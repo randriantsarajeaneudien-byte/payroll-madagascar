@@ -47,6 +47,30 @@
             </div>
         </div>
 
+        <!-- Bloc informatif du barème officiel de l'IRSA relié à votre Admin -->
+        <div class="alert alert-info shadow-sm mb-4">
+            <h6 class="alert-heading fw-bold mb-2">
+                <i class="bi bi-info-circle-fill me-2"></i>{{ irsa_config.name|default:"Barème officiel de l'IRSA appliqué" }} :
+            </h6>
+            <div class="row small">
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li>Tranche 1 (0% à 5%) : Jusqu'à {{ irsa_config.tranche_1_limit|floatformat:0 }} Ar</li>
+                        <li>Tranche 2 (10%) : De {{ irsa_config.tranche_1_limit|floatformat:0 }} à {{ irsa_config.tranche_2_limit|floatformat:0 }} Ar</li>
+                        <li>Tranche 3 (15%) : De {{ irsa_config.tranche_2_limit|floatformat:0 }} à {{ irsa_config.tranche_3_limit|floatformat:0 }} Ar</li>
+                        <li>Tranche 4 (20%) : De {{ irsa_config.tranche_3_limit|floatformat:0 }} à {{ irsa_config.tranche_4_limit|floatformat:0 }} Ar</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li>Tranche 5 (25%) : De {{ irsa_config.tranche_4_limit|floatformat:0 }} à {{ irsa_config.tranche_5_limit|floatformat:0 }} Ar</li>
+                        <li><strong>Déduction par enfant à charge :</strong> {{ irsa_config.child_deduction_amount|floatformat:0 }} Ar</li>
+                        <li><strong>Minimum de perception :</strong> {{ irsa_config.minimum_irsa|floatformat:0 }} Ar</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
         <div class="card shadow-sm">
             <div class="card-header bg-light">
                 <h5 class="card-title mb-0">

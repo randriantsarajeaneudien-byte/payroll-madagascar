@@ -1,4 +1,5 @@
 from decimal import Decimal, ROUND_HALF_UP
+from accounts.models import IRSASetting
 
 
 def round_currency(value):
@@ -33,7 +34,7 @@ def calculate_madagascar_payroll(base_salary, unpaid_absences=0, overtime=0, bon
         gross_salary = Decimal('0.00')
 
     # 2. Cotisations Salariales (CNaPS et SMIDS basés sur les taux de l'entreprise)
-    cnaps_max_base = Decimal('2101440.00') # Plafond légal éventuel
+    cnaps_max_base = Decimal('2101440.00')  # Plafond légal éventuel
     cnaps_taxable_base = min(gross_salary, cnaps_max_base)
 
     cnaps_employee = round_currency(cnaps_taxable_base * r_cnaps_emp)
@@ -44,16 +45,57 @@ def calculate_madagascar_payroll(base_salary, unpaid_absences=0, overtime=0, bon
     if taxable_base < Decimal('0.00'):
         taxable_base = Decimal('0.00')
 
-    # 3. Calcul IRSA Madagascar (Minimum fixe de 3 000 Ar)
-    if taxable_base <= Decimal('350000.00'):
-        raw_irsa = Decimal('3000.00')
+    # Récupération de la configuration IRSA depuis l'Admin Django (singleton)
+    irsa_config = IRSASetting.objects.first()
+    if irsa_config:
+        min_irsa = irsa_config.minimum_irsa
+        child_deduction_amount = irsa_config.child_deduction_amount
+        t1 = irsa_config.tranche_1_limit
+        t2 = irsa_config.tranche_2_limit
+        t3 = irsa_config.tranche_3_limit
+        t4 = irsa_config.tranche_4_limit
+        t5 = irsa_config.tranche_5_limit
     else:
-        taxable_amount = taxable_base - Decimal('350000.00')
-        raw_irsa = Decimal('3000.00') + (taxable_amount * Decimal('0.20'))
+        # Valeurs de secours par défaut
+        min_irsa = Decimal('3000.00')
+        child_deduction_amount = Decimal('2000.00')
+        t1 = Decimal('350000.00')
+        t2 = Decimal('400000.00')
+        t3 = Decimal('500000.00')
+        t4 = Decimal('600000.00')
+        t5 = Decimal('4000000.00')
 
-    # Déduction pour enfants à charge (2 000 Ar par enfant à charge)
-    child_deduction = Decimal(str(children or 0)) * Decimal('2000.00')
-    irsa = max(Decimal('3000.00'), raw_irsa - child_deduction)
+    # 3. Calcul IRSA Madagascar par tranches progressives dynamiques
+    raw_irsa = Decimal('0.00')
+    temp_taxable_base = taxable_base
+
+    if temp_taxable_base > t5:
+        raw_irsa += (temp_taxable_base - t5) * Decimal('0.25')
+        temp_taxable_base = t5
+    if temp_taxable_base > t4:
+        raw_irsa += (temp_taxable_base - t4) * Decimal('0.20')
+        temp_taxable_base = t4
+    if temp_taxable_base > t3:
+        raw_irsa += (temp_taxable_base - t3) * Decimal('0.15')
+        temp_taxable_base = t3
+    if temp_taxable_base > t2:
+        raw_irsa += (temp_taxable_base - t2) * Decimal('0.10')
+        temp_taxable_base = t2
+    if temp_taxable_base > t1:
+        raw_irsa += (temp_taxable_base - t1) * Decimal('0.05')
+
+    # Déduction pour enfants à charge
+    child_deduction = Decimal(str(children or 0)) * child_deduction_amount
+
+    # Application de la réduction pour charges de famille
+    irsa_after_deduction = raw_irsa - child_deduction
+
+    # Minimum de perception légal si le brut imposable dépasse la première limite
+    if gross_salary > t1:
+        irsa = max(min_irsa, irsa_after_deduction)
+    else:
+        irsa = Decimal('0.00')
+
     irsa = round_currency(irsa)
 
     # 4. Net à Payer

@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 
-from accounts.models import Company
+from accounts.models import Company, IRSASetting
 from ..models import Payslip
 
 MONTHS_LIST = [
@@ -47,10 +47,14 @@ def irsa_declaration_view(request):
     context = _get_declaration_context(request)
     payslips = context['payslips']
 
+    # Récupération de la configuration IRSA pour l'affichage des paramètres dans le template
+    irsa_config = IRSASetting.objects.first()
+
     context.update({
         'total_gross': sum(p.gross_salary for p in payslips),
         'total_taxable_base': sum(getattr(p, 'taxable_base', p.gross_salary) for p in payslips),
         'total_irsa': sum(p.irsa for p in payslips),
+        'irsa_config': irsa_config,
     })
 
     return render(request, 'payroll/irsa_declaration.html', context)

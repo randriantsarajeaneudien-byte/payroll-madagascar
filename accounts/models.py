@@ -59,6 +59,38 @@ class Company(models.Model):
         return self.name
 
 
+class IRSASetting(models.Model):
+    """Modèle pour contrôler les paramètres du barème IRSA depuis l'Admin"""
+    name = models.CharField(max_length=100, default="Paramètres IRSA Madagascar")
+    minimum_irsa = models.DecimalField(max_digits=10, decimal_places=2, default=3000.00,
+                                       verbose_name="Minimum de perception (Ar)")
+    child_deduction_amount = models.DecimalField(max_digits=10, decimal_places=2, default=2000.00,
+                                                 verbose_name="Déduction par enfant (Ar)")
+
+    # Seuils des tranches
+    tranche_1_limit = models.DecimalField(max_digits=10, decimal_places=2, default=350000.00,
+                                          verbose_name="Limite Tranche 1 (Ar)")
+    tranche_2_limit = models.DecimalField(max_digits=10, decimal_places=2, default=400000.00,
+                                          verbose_name="Limite Tranche 2 (Ar)")
+    tranche_3_limit = models.DecimalField(max_digits=10, decimal_places=2, default=500000.00,
+                                          verbose_name="Limite Tranche 3 (Ar)")
+    tranche_4_limit = models.DecimalField(max_digits=10, decimal_places=2, default=600000.00,
+                                          verbose_name="Limite Tranche 4 (Ar)")
+    tranche_5_limit = models.DecimalField(max_digits=10, decimal_places=2, default=4000000.00,
+                                          verbose_name="Limite Tranche 5 (Ar)")
+
+    class Meta:
+        verbose_name = "Configuration IRSA"
+        verbose_name_plural = "Configuration IRSA"
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        self.pk = 1  # Singleton : une seule ligne de config IRSA
+        super().save(*args, **kwargs)
+
+
 class PaymentSettings(models.Model):
     """Configuration du numéro Mobile Money modifiable depuis l'Admin"""
     mobile_money_number = models.CharField(
@@ -82,5 +114,5 @@ class PaymentSettings(models.Model):
         verbose_name_plural = "Configuration Paiement"
 
     def save(self, *args, **kwargs):
-        self.pk = 1  # Singleton : conserve toujours la même ligne unique en BDD
+        self.pk = 1  # Singleton
         super().save(*args, **kwargs)

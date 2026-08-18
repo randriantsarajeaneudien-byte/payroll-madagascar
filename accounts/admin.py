@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils import timezone
 from datetime import timedelta
-from .models import Company, PaymentSettings
+from .models import Company, PaymentSettings, IRSASetting
 
 
 @admin.action(description="Activer l'abonnement (2 mois / 60 000 Ar)")
@@ -65,7 +65,6 @@ class CompanyAdmin(admin.ModelAdmin):
         }),
     )
 
-    # Référence directe aux fonctions d'action (sans guillemets)
     actions = [
         activate_subscription_2_months,
         reset_free_trials,
@@ -80,5 +79,15 @@ class PaymentSettingsAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         if PaymentSettings.objects.exists():
+            return False
+        return super().has_add_permission(request)
+
+
+@admin.register(IRSASetting)
+class IRSASettingAdmin(admin.ModelAdmin):
+    list_display = ('name', 'minimum_irsa', 'child_deduction_amount')
+
+    def has_add_permission(self, request):
+        if IRSASetting.objects.exists():
             return False
         return super().has_add_permission(request)
