@@ -110,3 +110,59 @@ class PayrollSettings(models.Model):
 
     def __str__(self):
         return f"Paramètres de paie - {self.company.name}"
+
+
+# ==============================================================================
+# Suivi journalier des présences et absences
+# ==============================================================================
+class Attendance(models.Model):
+    SHIFT_CHOICES = [
+        ('morning', 'Matin (1/60)'),
+        ('afternoon', 'Après-midi (1/60)'),
+        ('night', 'Nuit (1/60)'),
+        ('full_day', 'Journée complète (1/30)'),
+    ]
+
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='attendances', verbose_name="Salarié")
+    date = models.DateField(verbose_name="Date")
+    shift = models.CharField(max_length=20, choices=SHIFT_CHOICES, verbose_name="Tranche / Période")
+    is_excused = models.BooleanField(default=False, verbose_name="Congé / Absence autorisée (non déductible)")
+
+    class Meta:
+        unique_together = ('employee', 'date', 'shift')
+        verbose_name = "Suivi de présence / absence"
+        verbose_name_plural = "Suivis des présences et absences"
+
+    def __str__(self):
+        return f"{self.employee} - {self.date} ({self.get_shift_display()})"
+
+
+# ==============================================================================
+# Gestion des Demandes et Suivi des Congés
+# ==============================================================================
+class LeaveRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'En attente'),
+        ('approved', 'Validé'),
+        ('rejected', 'Refusé')
+    ]
+    TYPE_CHOICES = [
+        ('paid', 'Congé Payé'),
+        ('unpaid', 'Sans Solde'),
+        ('sick', 'Maladie')
+    ]
+
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='leave_requests', verbose_name="Salarié")
+    start_date = models.DateField(verbose_name="Date de début")
+    end_date = models.DateField(verbose_name="Date de fin")
+    leave_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='paid', verbose_name="Type de congé")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="Statut")
+    reason = models.TextField(blank=True, null=True, verbose_name="Motif")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Demande de congé"
+        verbose_name_plural = "Demandes de congés"
+
+    def __str__(self):
+        return f"{self.employee} : {self.get_leave_type_display()} du {self.start_date} au {self.end_date}"

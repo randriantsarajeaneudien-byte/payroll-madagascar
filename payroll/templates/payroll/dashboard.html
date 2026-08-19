@@ -23,7 +23,7 @@
                 <span class="navbar-text text-white">
                     Société: <strong>{{ company.name }}</strong>
                 </span>
-                <!-- LIEN PARAMÈTRES AJOUTÉ ICI -->
+                <!-- LIEN PARAMÈTRES -->
                 <a href="{% url 'payroll:payroll_settings' %}" class="btn btn-outline-light btn-sm">
                     <i class="bi bi-gear-fill me-1"></i>Paramètres
                 </a>
@@ -71,6 +71,16 @@
                 <i class="bi bi-people me-2"></i>Gestion des Salariés
             </h2>
             <div class="d-flex gap-2">
+                <!-- BOUTON GESTION PRÉSENCES -->
+                <a href="{% url 'payroll:attendance_dashboard' %}" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-calendar-check me-1"></i>Gestion Présences
+                </a>
+
+                <!-- BOUTON GESTION CONGÉS -->
+                <a href="{% url 'payroll:leave_dashboard' %}" class="btn btn-outline-info btn-sm">
+                    <i class="bi bi-calendar2-range me-1"></i>Gestion Congés
+                </a>
+
                 <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#employeesCollapse" id="btnToggleEmployees">
                     Voir moins
                 </button>

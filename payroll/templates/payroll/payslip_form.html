@@ -198,6 +198,38 @@
                 }
             });
 
+            // Mise à jour dynamique des absences et congés lors du changement de mois/année
+            const monthSelect = document.querySelector('select[name="month"]');
+            const yearInput = document.querySelector('input[name="year"]');
+
+            if (monthSelect) {
+                monthSelect.addEventListener('change', fetchAttendanceData);
+            }
+            if (yearInput) {
+                yearInput.addEventListener('change', fetchAttendanceData);
+            }
+
+            function fetchAttendanceData() {
+                const month = monthSelect ? monthSelect.value : '';
+                const year = yearInput ? yearInput.value : '';
+                const employeeId = "{{ employee.id }}";
+
+                if (!month || !year) return;
+
+                fetch(`/payroll/api/calculate-attendance/?employee_id=${employeeId}&month=${encodeURIComponent(month)}&year=${year}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data) {
+                            const absenceDaysInput = document.querySelector('input[name="absence_days"]');
+                            const dailyRateInput = document.querySelector('input[name="daily_absence_rate"]');
+
+                            if (absenceDaysInput) absenceDaysInput.value = data.absence_days;
+                            if (dailyRateInput) dailyRateInput.value = data.daily_absence_rate;
+                        }
+                    })
+                    .catch(error => console.error('Erreur lors de la récupération des absences:', error));
+            }
+
             // Conversion automatique des virgules en points lors de la soumission
             const payslipForm = document.getElementById('payslipForm');
             if (payslipForm) {

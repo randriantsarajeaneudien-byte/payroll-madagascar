@@ -194,3 +194,83 @@ def generate_payslip_pdf_response(payslip, request_user):
 
     response['Content-Disposition'] = f'attachment; filename="{filename}"; filename*=UTF-8\'\'{encoded_filename}'
     return response
+
+
+def generate_attendance_pdf_response(company, date_str, attendance_records, request_user):
+    """
+    Génère le document PDF de la feuille de présence et retourne la réponse HTTP.
+    """
+    if company.owner != request_user:
+        return HttpResponseForbidden("Vous n'avez pas l'autorisation d'accéder à ce document.")
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=25,
+        leftMargin=25,
+        topMargin=20,
+        bottomMargin=20
+    )
+
+    story = []
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle(
+        'TitleStyle', parent=styles['Heading1'],
+        fontName='Helvetica-Bold', fontSize=12, alignment=1, textColor=colors.black
+    )
+    cell_style = ParagraphStyle('CellStyle', fontName='Helvetica', fontSize=9, leading=11)
+    bold_style = ParagraphStyle('BoldStyle', fontName='Helvetica-Bold', fontSize=9, leading=11)
+
+    # 1. Titre
+    title_data = [[Paragraph(f"FICHE DE PRÉSENCE / ABSENCES - {date_str}", title_style)]]
+    title_table = Table(title_data, colWidths=[545])
+    title_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#EAEAEA")),
+        ('BOX', (0, 0), (-1, -1), 1, colors.black),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    story.append(title_table)
+    story.append(Spacer(1, 10))
+
+    # 2. Tableau des données de présence
+    table_data = [
+        [
+            Paragraph("<b>Employé</b>", bold_style),
+            Paragraph("<b>Matin (1/60)</b>", bold_style),
+            Paragraph("<b>Après-midi (1/60)</b>", bold_style),
+            Paragraph("<b>Nuit (1/60)</b>", bold_style),
+            Paragraph("<b>Journée (1/30)</b>", bold_style),
+        ]
+    ]
+
+    for record in attendance_records:
+        table_data.append([
+            Paragraph(f"{record['employee'].last_name} {record['employee'].first_name}", cell_style),
+            Paragraph("X" if record['morning'] else "", cell_style),
+            Paragraph("X" if record['afternoon'] else "", cell_style),
+            Paragraph("X" if record['night'] else "", cell_style),
+            Paragraph("X" if record['full_day'] else "", cell_style),
+        ])
+
+    attendance_table = Table(table_data, colWidths=[205, 85, 85, 85, 85])
+    attendance_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#F0F0F0")),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('PADDING', (0, 0), (-1, -1), 4),
+    ]))
+    story.append(attendance_table)
+
+    doc.build(story)
+    pdf_data = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(pdf_data, content_type='application/pdf')
+    filename = f"Fiche_Presence_{date_str}.pdf"
+    encoded_filename = quote(filename)
+    response['Content-Disposition'] = f'attachment; filename="{filename}"; filename*=UTF-8\'\'{encoded_filename}'
+
+    return response

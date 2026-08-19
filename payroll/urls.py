@@ -6,7 +6,9 @@ from .views import (
     declaration_views,
     summary_views,
     pdf_views,
-    settings_views,  # <-- 1. Importez le module de vue des paramètres
+    settings_views,
+    attendance_views,
+    leave_views,  # Importation des vues de congés
 )
 
 app_name = 'payroll'
@@ -23,6 +25,9 @@ urlpatterns = [
     path('employee/<int:employee_id>/edit/', employee_views.employee_edit, name='employee_edit'),
     path('employee/<int:employee_id>/delete/', employee_views.employee_delete, name='employee_delete'),
 
+    # API AJAX pour le calcul dynamique des absences dans le formulaire de paie
+    path('api/calculate-attendance/', payslip_views.api_calculate_attendance, name='api_calculate_attendance'),
+
     # Bulletins de Paie & Archives
     path('payslips/', payslip_views.payslip_list, name='payslip_list'),
     path('payslips/archived/', payslip_views.archived_payslips, name='archived_payslips'),
@@ -30,8 +35,20 @@ urlpatterns = [
     path('employee/<int:employee_id>/payslip/new/', payslip_views.payslip_create, name='payslip_create'),
     path('payslip/<int:payslip_id>/', payslip_views.payslip_detail, name='payslip_detail'),
 
+    # Route de recalcul ajoutée ici :
+    path('payslip/<int:payslip_id>/recalculate/', payslip_views.payslip_recalculate, name='payslip_recalculate'),
+
     path('payslip/<int:payslip_id>/pdf/', pdf_views.generate_payslip_pdf, name='generate_payslip_pdf'),
     path('payslip/<int:payslip_id>/toggle-hide/', payslip_views.toggle_hide_payslip, name='toggle_hide_payslip'),
+
+    # Suivi des Présences
+    path('attendance/', attendance_views.attendance_dashboard, name='attendance_dashboard'),
+    # Nouvelle route pour exporter la feuille de présence en PDF
+    path('attendance/export-pdf/', attendance_views.export_attendance_pdf, name='export_attendance_pdf'),
+
+    # Gestion des Congés
+    path('leaves/', leave_views.leave_dashboard, name='leave_dashboard'),
+    path('leaves/<int:pk>/update/<str:status>/', leave_views.update_leave_status, name='update_leave_status'),
 
     # Déclarations Sociales & Fiscales
     path('declarations/irsa/', declaration_views.irsa_declaration_view, name='irsa_declaration'),
@@ -43,6 +60,6 @@ urlpatterns = [
     path('summary/monthly/excel/', summary_views.export_monthly_summary_excel, name='export_monthly_summary_excel'),
     path('summary/monthly/pdf/', summary_views.export_monthly_summary_pdf, name='export_monthly_summary_pdf'),
 
-    # Paramètres de Paie de l'entreprise (NOUVEAU)
+    # Paramètres de Paie de l'entreprise
     path('settings/', settings_views.payroll_settings_view, name='payroll_settings'),
 ]

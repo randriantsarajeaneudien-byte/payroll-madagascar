@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -11,7 +11,7 @@ from reportlab.lib import colors
 from accounts.models import Company
 from ..models import Employee, Payslip, PayrollSettings
 from ..forms import PayslipCreateForm
-from ..utils.calculations import calculate_madagascar_payroll
+from ..utils.calculations import calculate_madagascar_payroll, calculate_attendance_deductions_for_month
 
 
 @login_required
@@ -37,6 +37,31 @@ def payslip_detail(request, payslip_id):
 
 
 @login_required
+def api_calculate_attendance(request):
+    """API JSON pour actualiser les absences et le taux journalier selon le mois/année sélectionnés"""
+    employee_id = request.GET.get('employee_id')
+    month = request.GET.get('month')
+    year_str = request.GET.get('year')
+
+    if not employee_id or not month or not year_str:
+        return JsonResponse({'error': 'Paramètres manquants'}, status=400)
+
+    try:
+        year = int(year_str)
+    except ValueError:
+        return JsonResponse({'error': 'Année invalide'}, status=400)
+
+    employee = get_object_or_404(Employee, id=employee_id, company__owner=request.user)
+    att_data = calculate_attendance_deductions_for_month(employee, month, year)
+
+    return JsonResponse({
+        'absence_days': att_data['absence_days'],
+        'daily_absence_rate': att_data['daily_absence_rate'],
+        'unpaid_absences_amount': att_data['unpaid_absences_amount']
+    })
+
+
+@login_required
 def payslip_create(request, employee_id):
     employee = get_object_or_404(Employee, id=employee_id, company__owner=request.user)
     company = employee.company
@@ -47,8 +72,11 @@ def payslip_create(request, employee_id):
             payslip = form.save(commit=False)
             payslip.employee = employee
 
-            # 1. Retenue pour absence
-            payslip.unpaid_absences_amount = (payslip.absence_days or 0) * (payslip.daily_absence_rate or 0)
+            # 1. Récupération automatique des absences et congés sans solde du mois
+            att_data = calculate_attendance_deductions_for_month(employee, payslip.month, payslip.year)
+            payslip.absence_days = att_data['absence_days']
+            payslip.daily_absence_rate = att_data['daily_absence_rate']
+            payslip.unpaid_absences_amount = att_data['unpaid_absences_amount']
 
             # 2. Calculs automatiques des cotisations et de l'IRSA (avec les taux de l'entreprise)
             calc = calculate_madagascar_payroll(
@@ -92,13 +120,63 @@ def payslip_create(request, employee_id):
         else:
             messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
     else:
-        default_daily_rate = round(employee.base_salary / 30, 2) if employee.base_salary else 0
+        # Valeurs par défaut pour le chargement initial (ex: Janvier 2026)
+        default_month = "Janvier"
+        default_year = 2026
+
+        # Calcul automatique direct des absences pour pré-remplir les champs
+        att_data = calculate_attendance_deductions_for_month(employee, default_month, default_year)
+
+        # Utilisation de 'initial' pour alimenter correctement les valeurs par défaut du formulaire
         form = PayslipCreateForm(initial={
-            'year': 2026,
+            'month': default_month,
+            'year': default_year,
             'working_days': 30,
-            'daily_absence_rate': default_daily_rate
+            'absence_days': att_data['absence_days'],
+            'daily_absence_rate': att_data['daily_absence_rate'],
+            'paid_leave_days': getattr(employee, 'leave_balance', 0) or 0
         })
+
     return render(request, 'payroll/payslip_form.html', {'form': form, 'employee': employee})
+
+
+@login_required
+def payslip_recalculate(request, payslip_id):
+    """Recalcule un bulletin existant en tenant compte des derniers congés et présences saisis"""
+    payslip = get_object_or_404(Payslip, id=payslip_id, employee__company__owner=request.user)
+    employee = payslip.employee
+    company = employee.company
+
+    # 1. Actualisation des absences et congés sans solde basés sur les dates
+    att_data = calculate_attendance_deductions_for_month(employee, payslip.month, payslip.year)
+    payslip.absence_days = att_data['absence_days']
+    payslip.daily_absence_rate = att_data['daily_absence_rate']
+    payslip.unpaid_absences_amount = att_data['unpaid_absences_amount']
+
+    # 2. Recalcul global de la paie
+    calc = calculate_madagascar_payroll(
+        base_salary=employee.base_salary,
+        unpaid_absences=payslip.unpaid_absences_amount,
+        overtime=payslip.overtime_amount or 0,
+        bonus=payslip.bonuses or 0,
+        advance=payslip.advances or 0,
+        children=employee.children_count or 0,
+        company=company
+    )
+
+    payslip.gross_salary = calc['gross_salary']
+    payslip.cnaps_employee = calc['cnaps_employee']
+    payslip.smids_employee = calc['smids_employee']
+    payslip.taxable_base = calc['taxable_base']
+    payslip.irsa = calc['irsa']
+    payslip.net_payable = calc['net_payable']
+    payslip.cnaps_employer = calc['cnaps_employer']
+    payslip.smids_employer = calc['smids_employer']
+    payslip.fmfp_employer = calc['fmfp_employer']
+    payslip.save()
+
+    messages.success(request, f"Le bulletin de {employee.first_name} {employee.last_name} a été actualisé avec succès.")
+    return redirect('payroll:payslip_detail', payslip_id=payslip.id)
 
 
 @login_required
@@ -117,12 +195,13 @@ def payslip_bulk_create(request):
 
         count = 0
         for employee in employees:
-            default_daily_rate = round(employee.base_salary / 30, 2) if employee.base_salary else 0
+            # Récupération automatique des absences et congés sans solde du mois pour chaque salarié
+            att_data = calculate_attendance_deductions_for_month(employee, month, year)
 
-            # Calcul avec les taux personnalisés de l'entreprise
+            # Calcul avec les taux personnalisés de l'entreprise et les déductions automatiques
             calc = calculate_madagascar_payroll(
                 base_salary=employee.base_salary,
-                unpaid_absences=0,
+                unpaid_absences=att_data['unpaid_absences_amount'],
                 overtime=0,
                 bonus=0,
                 advance=0,
@@ -135,10 +214,10 @@ def payslip_bulk_create(request):
                 month=month,
                 year=year,
                 working_days=30,
-                absence_days=0,
+                absence_days=att_data['absence_days'],
                 paid_leave_days=0,
-                daily_absence_rate=default_daily_rate,
-                unpaid_absences_amount=0,
+                daily_absence_rate=att_data['daily_absence_rate'],
+                unpaid_absences_amount=att_data['unpaid_absences_amount'],
                 overtime_hours=0,
                 overtime_amount=0,
                 bonuses=0,
@@ -227,14 +306,15 @@ def generate_payslip_pdf(request, payslip_id):
                   styles['Normal']))
     elements.append(Spacer(1, 15))
 
-    # Tableau du PDF
+    # Tableau du PDF avec libellé unifié pour absences et congés sans solde
     data = [
         ["Désignation", "Gains (Ar)", "Retenues (Ar)"],
         ["Salaire de base", f"{payslip.employee.base_salary:,.2f}", "-"],
     ]
 
     if payslip.unpaid_absences_amount > 0:
-        data.append([f"Absences ({payslip.absence_days} j)", "-", f"{payslip.unpaid_absences_amount:,.2f}"])
+        data.append(
+            [f"Absences / Congés sans solde ({payslip.absence_days} j)", "-", f"{payslip.unpaid_absences_amount:,.2f}"])
     if payslip.overtime_amount > 0:
         data.append(["Heures supplémentaires", f"{payslip.overtime_amount:,.2f}", "-"])
     if payslip.bonuses > 0:

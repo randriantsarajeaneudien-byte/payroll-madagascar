@@ -2,15 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
+from django.utils import timezone
 from accounts.models import Company
-from ..models import Employee, Payslip
+from ..models import Employee, Payslip, Attendance
 
 
 @login_required
 def dashboard(request):
     """
     Tableau de bord principal RH & Paie :
-    Affiche les salariés de l'entreprise et les récents bulletins non archivés.
+    Affiche les salariés de l'entreprise, les récents bulletins et les présences du jour.
     """
     company = get_object_or_404(Company, owner=request.user)
 
@@ -34,11 +35,21 @@ def dashboard(request):
 
     recent_payslips = recent_payslips.order_by('-year', '-created_at')[:30]
 
+    # --- NOUVEAU : Récupération des absences du jour pour affichage rapide ---
+    today = timezone.now().date()
+    today_absences = Attendance.objects.filter(
+        employee__company=company,
+        date=today
+    ).select_related('employee')
+    # -----------------------------------------------------------------------
+
     context = {
         'company': company,
         'employees': employees,
         'recent_payslips': recent_payslips,
         'search_query': search_query,
+        'today_absences': today_absences,  # Pour afficher les absents du jour sur le dashboard si besoin
+        'today_date': today,
     }
     return render(request, 'payroll/dashboard.html', context)
 
